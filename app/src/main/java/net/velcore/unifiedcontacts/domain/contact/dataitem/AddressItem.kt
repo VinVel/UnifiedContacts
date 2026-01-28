@@ -11,4 +11,21 @@
 
 package net.velcore.unifiedcontacts.domain.contact.dataitem
 
-data class AddressItem()
+import net.velcore.unifiedcontacts.domain.util.MimeTypes
+
+data class AddressItem(
+    override val id: Long,
+    val street: String?,
+    val pobox: String?,
+    val neighborhood: String?,
+    val city: String?,
+    val region: String?,
+    val postcode: String?,
+    val country: String?,
+    val type: Int,              //e.g. if the address is for home, work or others
+    val label: String?,
+    val formattedAddress: String?
+
+): DataItem() {
+    override val mimeType = MimeTypes.POSTAL_ADDRESS
+}

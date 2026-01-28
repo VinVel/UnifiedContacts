@@ -11,4 +11,14 @@
 
 package net.velcore.unifiedcontacts.domain.contact.dataitem
 
-data class OrgItem()
+import net.velcore.unifiedcontacts.domain.util.MimeTypes
+
+data class OrgItem(
+    override val id: Long,
+    val organisation: String?,
+    val division: String?,
+    val title: String?
+
+): DataItem() {
+    override val mimeType = MimeTypes.ORGANIZATION
+}

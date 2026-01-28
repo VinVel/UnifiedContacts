@@ -11,4 +11,13 @@
 
 package net.velcore.unifiedcontacts.domain.contact.dataitem
 
-data class EventItem()
+import net.velcore.unifiedcontacts.domain.util.MimeTypes
+import java.time.LocalDate
+
+data class EventItem(
+    override val id: Long,
+    val type: String,
+    val date: LocalDate,
+): DataItem() {
+    override val mimeType = MimeTypes.EVENT
+}

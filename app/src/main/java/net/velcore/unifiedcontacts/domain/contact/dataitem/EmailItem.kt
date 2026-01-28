@@ -11,4 +11,12 @@
 
 package net.velcore.unifiedcontacts.domain.contact.dataitem
 
-data class EmailItem()
+import net.velcore.unifiedcontacts.domain.util.MimeTypes
+
+data class EmailItem(
+    override val id: Long,
+    val address: String,
+    val type: Int
+): DataItem() {
+    override val mimeType = MimeTypes.EMAIL
+}

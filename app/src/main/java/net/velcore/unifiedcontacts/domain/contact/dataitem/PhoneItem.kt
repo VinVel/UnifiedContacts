@@ -11,4 +11,14 @@
 
 package net.velcore.unifiedcontacts.domain.contact.dataitem
 
-data class PhoneItem()
+import net.velcore.unifiedcontacts.domain.util.MimeTypes
+
+data class PhoneItem(
+    override val id: Long,
+    val number: String,
+    val type: Int, //used to categorise what type of phone number it is, e.g. Home, Mobile, Work, etc.
+    val label: String?
+
+): DataItem() {
+    override val mimeType: String = MimeTypes.PHONE
+}

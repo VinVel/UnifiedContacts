@@ -11,5 +11,7 @@
 
 package net.velcore.unifiedcontacts.domain.contact.dataitem
 
-sealed class DataItem {
+sealed class DataItem{
+    abstract val id: Long
+    abstract val mimeType: String
 }

@@ -11,4 +11,10 @@
 
 package net.velcore.unifiedcontacts.domain.contact
 
-data class RawContact()
+import net.velcore.unifiedcontacts.domain.contact.dataitem.DataItem
+
+data class RawContact(
+    val id: Long,
+    val account: AccountRef,
+    val items: List<DataItem>
+)

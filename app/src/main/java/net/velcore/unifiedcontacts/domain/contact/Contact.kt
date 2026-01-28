@@ -11,4 +11,8 @@
 
 package net.velcore.unifiedcontacts.domain.contact
 
-data class Contact()
+//aggregation of different RawContacts
+data class Contact(
+    val id: Long,
+    val rawContacts: List<RawContact>
+)

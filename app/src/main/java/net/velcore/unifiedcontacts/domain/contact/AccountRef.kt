@@ -11,4 +11,8 @@
 
 package net.velcore.unifiedcontacts.domain.contact
 
-data class AccountRef()
+//distinguish contacts across different providers (e.g. Google, DAVx5, local)
+data class AccountRef(
+    val name: String,
+    val type: String
+)

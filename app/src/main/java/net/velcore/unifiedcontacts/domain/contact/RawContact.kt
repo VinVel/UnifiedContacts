@@ -14,11 +14,10 @@ package net.velcore.unifiedcontacts.domain.contact
 import net.velcore.unifiedcontacts.domain.contact.dataitem.DataItem
 
 data class RawContact(
-    val id: Long,
-    val account: AccountRef,
-    val items: List<DataItem>,
+    val id: Long, //equivalent to Androids RawContacts._ID
+    val account: AccountRef, //equivalent to Androids RawContacts.Account_TYPE
+    val items: List<DataItem>, //content of the rawContact
     val origin: RawContactOrigin,
     val writeState: WriteState = WriteState.WRITABLE,
-    val sourceId: String? = null,
     val linkId: String? = null
 )

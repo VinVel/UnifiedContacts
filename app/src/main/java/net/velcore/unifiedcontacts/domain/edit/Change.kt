@@ -11,5 +11,21 @@
 
 package net.velcore.unifiedcontacts.domain.edit
 
+import net.velcore.unifiedcontacts.domain.contact.dataitem.DataItem
+
 sealed class Change {
+    data class Add(
+        val rawContactId: Long,
+        val item: DataItem
+    ): Change()
+
+    data class Update(
+        val itemId: Long,
+        val newItem: DataItem
+    ): Change()
+
+    data class Delete(
+        val itemId: Long
+    ): Change()
+
 }

@@ -11,5 +11,11 @@
 
 package net.velcore.unifiedcontacts.domain.edit
 
+import net.velcore.unifiedcontacts.domain.contact.RawContact
+import net.velcore.unifiedcontacts.domain.contact.WriteState
+
 object EditRules {
+    fun canEdit(rawContact: RawContact): Boolean {
+        return rawContact.writeState == WriteState.WRITEABLE
+    }
 }

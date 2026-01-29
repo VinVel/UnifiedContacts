@@ -16,5 +16,6 @@ import net.velcore.unifiedcontacts.domain.contact.dataitem.DataItem
 data class RawContact(
     val id: Long,
     val account: AccountRef,
-    val items: List<DataItem>
+    val items: List<DataItem>,
+    val writeState: WriteState = WriteState.WRITEABLE
 )

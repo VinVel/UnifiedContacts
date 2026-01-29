@@ -14,7 +14,7 @@ package net.velcore.unifiedcontacts.domain.contact.dataitem
 import net.velcore.unifiedcontacts.domain.util.MimeTypes
 
 data class NoteItem(
-    override val id: Long
+    override val id: Long,
     val note: String?
 
 ): DataItem() {

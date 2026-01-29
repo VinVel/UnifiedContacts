@@ -11,4 +11,8 @@
 
 package net.velcore.unifiedcontacts.domain.edit
 
-data class ContactEditRequest()
+data class ContactEditRequest(
+    val contactId: Long,
+    val changes: List<Change>,
+    val reason: String? = null //mainly for debugging purposes
+)

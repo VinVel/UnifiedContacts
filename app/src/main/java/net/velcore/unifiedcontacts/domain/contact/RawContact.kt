@@ -17,5 +17,6 @@ data class RawContact(
     val id: Long,
     val account: AccountRef,
     val items: List<DataItem>,
+    val origin: RawContactOrigin,
     val writeState: WriteState = WriteState.WRITABLE
 )

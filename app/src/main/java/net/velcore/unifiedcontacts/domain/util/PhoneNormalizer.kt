@@ -11,5 +11,6 @@
 
 package net.velcore.unifiedcontacts.domain.util
 
-class PhoneNormalizer {
+object PhoneNormalizer {
+    fun normalize(number: String): String = number.trim()
 }

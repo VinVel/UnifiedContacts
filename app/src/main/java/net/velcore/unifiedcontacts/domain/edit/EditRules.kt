@@ -16,6 +16,6 @@ import net.velcore.unifiedcontacts.domain.contact.WriteState
 
 object EditRules {
     fun canEdit(rawContact: RawContact): Boolean {
-        return rawContact.writeState == WriteState.WRITEABLE
+        return rawContact.writeState == WriteState.WRITABLE
     }
 }

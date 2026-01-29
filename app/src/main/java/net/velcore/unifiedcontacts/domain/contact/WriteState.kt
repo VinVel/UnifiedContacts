@@ -12,6 +12,6 @@
 package net.velcore.unifiedcontacts.domain.contact
 
 enum class WriteState {
-    WRITEABLE,
+    WRITABLE,
     READ_ONLY,
 }

@@ -16,15 +16,17 @@ import net.velcore.unifiedcontacts.domain.contact.dataitem.DataItem
 sealed class Change {
     data class Add(
         val rawContactId: Long,
-        val item: DataItem
+        val addItem: DataItem //adds an item into the raw contact not before there yet
     ): Change()
 
     data class Update(
-        val itemId: Long,
-        val newItem: DataItem
+        val rawContactId: Long,
+        val oldItemId: Long,
+        val newItem: DataItem //adds a new item into the raw contact in the sense of replacing the old one
     ): Change()
 
     data class Delete(
+        val rawContactId: Long,
         val itemId: Long
     ): Change()
 

@@ -19,5 +19,6 @@ data class RawContact(
     val items: List<DataItem>,
     val origin: RawContactOrigin,
     val writeState: WriteState = WriteState.WRITABLE,
+    val sourceId: String? = null,
     val linkId: String? = null
 )

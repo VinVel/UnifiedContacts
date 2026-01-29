@@ -15,4 +15,16 @@ package net.velcore.unifiedcontacts.domain.contact
 data class Contact(
     val id: Long,
     val rawContacts: List<RawContact>
-)
+) {
+    //whether or not only one syncadapter is chosen
+    fun filtered(accountTypes: Set<String>): Contact =
+        copy(rawContacts = rawContacts.filter { it.account.type in accountTypes })
+
+    //whether the RawContact is even writable
+    fun writableRawContacts(): List<RawContact> =
+        rawContacts.filter { it.writeState == WriteState.WRITABLE }
+
+    //if multiple similar rawContacts with different syncadapters exist which one to chose.
+    fun editTargets(): List<RawContact> =
+        writableRawContacts()
+}

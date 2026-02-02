@@ -6,7 +6,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  *
- * Project home: https://unifiedcontacts.velcore.net/
+ * Project home: unifiedcontacts.velcore.net
  */
 
 package net.velcore.unifiedcontacts.ui.viewmodel

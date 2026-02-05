@@ -11,7 +11,7 @@
 
 package net.velcore.unifiedcontacts.domain.edit
 
-import net.velcore.unifiedcontacts.domain.contact.dataitem.DataItem
+import net.velcore.unifiedcontacts.domain.contact.DataItem
 
 sealed class Change {
     data class Add(

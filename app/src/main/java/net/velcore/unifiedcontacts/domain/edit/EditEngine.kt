@@ -13,7 +13,7 @@ package net.velcore.unifiedcontacts.domain.edit
 
 import net.velcore.unifiedcontacts.domain.contact.Contact
 import net.velcore.unifiedcontacts.domain.contact.RawContact
-import net.velcore.unifiedcontacts.domain.contact.dataitem.DataItem
+import net.velcore.unifiedcontacts.domain.contact.DataItem
 
 //This is kind of the dumb transformation Engine, it takes a rawContact and returns a new rawContact
 object EditEngine {

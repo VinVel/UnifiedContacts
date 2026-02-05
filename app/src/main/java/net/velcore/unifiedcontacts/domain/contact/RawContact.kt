@@ -11,8 +11,6 @@
 
 package net.velcore.unifiedcontacts.domain.contact
 
-import net.velcore.unifiedcontacts.domain.contact.dataitem.DataItem
-
 data class RawContact(
     val id: Long, //equivalent to Androids RawContacts._ID
     val account: AccountRef, //equivalent to Androids RawContacts.Account_TYPE

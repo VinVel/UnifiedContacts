@@ -11,8 +11,6 @@
 
 package net.velcore.unifiedcontacts.domain.contact
 
-import net.velcore.unifiedcontacts.domain.contact.dataitem.DataItem
-
 object ContactAggregator {
     fun aggregate(contact: Contact): List<DataItem> =
         contact.rawContacts.flatMap { it.items }

@@ -9,7 +9,7 @@
  * Project home: unifiedcontacts.velcore.net
  */
 
-package net.velcore.unifiedcontacts.data.mapper
+package net.velcore.unifiedcontacts.data.android
 
-class RawContactMapper {
+class AccountAdapter {
 }

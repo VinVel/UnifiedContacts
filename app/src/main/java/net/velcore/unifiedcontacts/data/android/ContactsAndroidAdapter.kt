@@ -9,7 +9,7 @@
  * Project home: unifiedcontacts.velcore.net
  */
 
-package net.velcore.unifiedcontacts.data.provider
+package net.velcore.unifiedcontacts.data.android
 
-class RawContactReader {
+class ContactsAndroidAdapter {
 }

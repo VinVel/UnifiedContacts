@@ -11,7 +11,7 @@
 
 package net.velcore.unifiedcontacts.domain.contact
 
-import net.velcore.unifiedcontacts.domain.util.MimeTypes
+import net.velcore.unifiedcontacts.data.android.MimeTypes
 import java.time.LocalDate
 
 sealed class DataItem{

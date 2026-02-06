@@ -9,7 +9,7 @@
  * Project home: unifiedcontacts.velcore.net
  */
 
-package net.velcore.unifiedcontacts.domain.util
+package net.velcore.unifiedcontacts.data.android
 
 object MimeTypes {
     const val PHONE = "vnd.android.cursor.item/phone_v2"

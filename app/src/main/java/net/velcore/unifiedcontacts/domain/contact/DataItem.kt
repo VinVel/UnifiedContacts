@@ -12,7 +12,6 @@
 package net.velcore.unifiedcontacts.domain.contact
 
 import net.velcore.unifiedcontacts.data.android.MimeTypes
-import java.time.LocalDate
 
 sealed class DataItem{
     abstract val id: Long
@@ -31,7 +30,7 @@ sealed class DataItem{
         val label: String?,
         val formattedAddress: String?
     ): DataItem() {
-        override val mimeType = MimeTypes.POSTAL_ADDRESS
+        override val mimeType = MimeTypes.ADDRESS
     }
 
     data class EmailItem(
@@ -45,16 +44,30 @@ sealed class DataItem{
     data class EventItem(
         override val id: Long,
         val type: String,
-        val date: LocalDate,
+        val date: Long // Use epoch milliseconds
     ): DataItem() {
         override val mimeType = MimeTypes.EVENT
+    }
+
+    data class GenderItem(
+        override val id: Long,
+        val gender: String
+    ): DataItem() {
+        override val mimeType = MimeTypes.GENDER
     }
 
     data class GroupItem(
         override val id: Long,
         val groupId: Long
     ): DataItem() {
-        override val mimeType = MimeTypes.GROUP
+        override val mimeType = MimeTypes.GROUP_MEMBERSHIP
+    }
+
+    data class ImItem( //Instant Messaging
+        override val id: Long,
+        val name: String
+    ): DataItem() {
+        override val mimeType = MimeTypes.IM
     }
 
     data class NameItem(
@@ -69,6 +82,13 @@ sealed class DataItem{
         val phoneticFamilyName: String?
     ): DataItem() {
         override val mimeType = MimeTypes.NAME
+    }
+
+    data class NicknameItem(
+        override val id: Long,
+        val nickname: String
+    ): DataItem() {
+        override val mimeType = MimeTypes.NICKNAME
     }
 
     data class NoteItem(
@@ -93,14 +113,35 @@ sealed class DataItem{
         val type: Int, //used to categorise what type of phone number it is, e.g. Home, Mobile, Work, etc.
         val label: String?
     ): DataItem() {
-        override val mimeType: String = MimeTypes.PHONE
+        override val mimeType = MimeTypes.PHONE
     }
 
     data class PhotoItem(
         override val id: Long,
-        val uri: String //TODO: overhaul the uri
+        val uri: ByteArray
     ): DataItem() {
         override val mimeType = MimeTypes.PHOTO
+
+        //auto-generated code by Android Studio to handle proper ByteArray usage (?)
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as PhotoItem
+
+            if (id != other.id) return false
+            if (!uri.contentEquals(other.uri)) return false
+            if (mimeType != other.mimeType) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = id.hashCode()
+            result = 31 * result + uri.contentHashCode()
+            result = 31 * result + mimeType.hashCode()
+            return result
+        }
     }
 
     data class ReadOnly(
@@ -123,5 +164,16 @@ sealed class DataItem{
         val url: String
     ): DataItem() {
         override val mimeType = MimeTypes.WEBSITE
+    }
+
+    data class SipAddressItem(
+        override val id: Long,
+        val sipAddress: String?,
+        val type: String, //e.g. TYPE_HOME, TYPE_WORK, or TYPE_OTHER
+        val customLabel: String?,
+        val isPrimary: Boolean, //Indicates if this is the primary SIP address for the contact
+        val isSuperPrimary: Boolean //Indicates if this is the primary SIP address for the aggregate contact
+    ): DataItem() {
+        override val mimeType = MimeTypes.SIP_ADDRESS
     }
 }

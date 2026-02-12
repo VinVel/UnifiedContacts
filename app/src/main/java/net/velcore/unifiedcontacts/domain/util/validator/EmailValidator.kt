@@ -9,7 +9,7 @@
  * Project home: unifiedcontacts.velcore.net
  */
 
-package net.velcore.unifiedcontacts.domain.util
+package net.velcore.unifiedcontacts.domain.util.validator
 
 object EmailValidator {
     private val EMAIL_REGEX =
@@ -30,6 +30,3 @@ object EmailValidator {
         return ValidationResult.Valid
     }
 }
-
-
-

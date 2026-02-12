@@ -9,11 +9,10 @@
  * Project home: unifiedcontacts.velcore.net
  */
 
-package net.velcore.unifiedcontacts.domain.util
+package net.velcore.unifiedcontacts.domain.util.normalizer
 
-sealed class ValidationResult {
-    object Valid : ValidationResult()
-    data class Invalid(val message: String) : ValidationResult()
+object EmailNormalizer {
+    fun normalize(address: String): String {
+        return address.trim()
+    }
 }
-
-

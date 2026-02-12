@@ -12,7 +12,8 @@
 package net.velcore.unifiedcontacts.domain.contact
 
 import net.velcore.unifiedcontacts.data.android.MimeTypes
-import net.velcore.unifiedcontacts.domain.util.*
+import net.velcore.unifiedcontacts.domain.util.normalizer.*
+import net.velcore.unifiedcontacts.domain.util.validator.*
 
 sealed class DataItem{
     abstract val id: Long
@@ -33,7 +34,6 @@ sealed class DataItem{
         val country: String?,
         val type: Int,              //e.g. if the address is for home, work or others
         val label: String?,
-        val formattedAddress: String?
     ): DataItem() {
         override val mimeType = MimeTypes.ADDRESS
     }
@@ -48,13 +48,8 @@ sealed class DataItem{
         override fun validate(): ValidationResult = EmailValidator.validate(address)
 
         override fun normalize(): DataItem {
-            val trimmed = address.trim()
-            if (trimmed == address) {
-                return this
-            }
-            else {
-                return copy(address = trimmed)
-            }
+            val normalized = EmailNormalizer.normalize(address)
+            return if (normalized == address) this else copy(address = normalized)
         }
     }
 
@@ -134,12 +129,7 @@ sealed class DataItem{
 
         override fun normalize(): DataItem {
             val normalized = PhoneNormalizer.normalize(number)
-            if (normalized == number) {
-                return this
-            }
-            else {
-                return copy(number = normalized)
-            }
+            return if (normalized == number) this else copy(number = normalized)
         }
     }
 

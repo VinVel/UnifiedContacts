@@ -9,15 +9,9 @@
  * Project home: unifiedcontacts.velcore.net
  */
 
-package net.velcore.unifiedcontacts.domain.util
+package net.velcore.unifiedcontacts.domain.util.validator
 
-object PhoneNormalizer {
-    fun normalize(number: String): String {
-        return number
-            .trim()
-            .replace(" ", "")
-            .replace("-", "")
-            .replace("(", "")
-            .replace(")", "")
-    }
+sealed class ValidationResult {
+    object Valid : ValidationResult()
+    data class Invalid(val message: String) : ValidationResult()
 }

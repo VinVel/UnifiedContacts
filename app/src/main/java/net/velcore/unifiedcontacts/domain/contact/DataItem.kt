@@ -12,10 +12,15 @@
 package net.velcore.unifiedcontacts.domain.contact
 
 import net.velcore.unifiedcontacts.data.android.MimeTypes
+import net.velcore.unifiedcontacts.domain.util.*
 
 sealed class DataItem{
     abstract val id: Long
     abstract val mimeType: String
+
+    open fun validate(): ValidationResult = ValidationResult.Valid
+
+    open fun normalize(): DataItem = this
 
     data class AddressItem(
         override val id: Long,
@@ -39,6 +44,18 @@ sealed class DataItem{
         val type: Int
     ): DataItem() {
         override val mimeType = MimeTypes.EMAIL
+
+        override fun validate(): ValidationResult = EmailValidator.validate(address)
+
+        override fun normalize(): DataItem {
+            val trimmed = address.trim()
+            if (trimmed == address) {
+                return this
+            }
+            else {
+                return copy(address = trimmed)
+            }
+        }
     }
 
     data class EventItem(
@@ -110,10 +127,20 @@ sealed class DataItem{
     data class PhoneItem(
         override val id: Long,
         val number: String,
-        val type: Int, //used to categorise what type of phone number it is, e.g. Home, Mobile, Work, etc.
+        val type: Int, //used to categorize what type of phone number it is, e.g. Home, Mobile, Work, etc.
         val label: String?
     ): DataItem() {
         override val mimeType = MimeTypes.PHONE
+
+        override fun normalize(): DataItem {
+            val normalized = PhoneNormalizer.normalize(number)
+            if (normalized == number) {
+                return this
+            }
+            else {
+                return copy(number = normalized)
+            }
+        }
     }
 
     data class PhotoItem(

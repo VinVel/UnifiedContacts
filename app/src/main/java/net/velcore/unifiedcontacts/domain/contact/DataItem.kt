@@ -186,6 +186,8 @@ sealed class DataItem{
         val url: String
     ): DataItem() {
         override val mimeType = MimeTypes.WEBSITE
+
+        override fun validate(): ValidationResult = WebsiteValidator.validate(url)
     }
 
     data class SipAddressItem(

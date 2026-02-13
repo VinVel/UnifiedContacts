@@ -12,6 +12,7 @@
 package net.velcore.unifiedcontacts.domain.contact
 
 import net.velcore.unifiedcontacts.data.android.MimeTypes
+import net.velcore.unifiedcontacts.domain.util.addresses.OpenCageAddressFormatter
 import net.velcore.unifiedcontacts.domain.util.normalizer.*
 import net.velcore.unifiedcontacts.domain.util.validator.*
 
@@ -36,6 +37,9 @@ sealed class DataItem{
         val label: String?,
     ): DataItem() {
         override val mimeType = MimeTypes.ADDRESS
+
+        val formattedAddress: String
+            get() = OpenCageAddressFormatter.format(this)
     }
 
     data class EmailItem(

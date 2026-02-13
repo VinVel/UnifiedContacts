@@ -24,7 +24,6 @@ data class AddressPatch(
     val country: String? = null,
     val type: Int? = null,
     val label: String? = null,
-    val formattedAddress: String? = null
 )
 
 //This adds context to the patch
@@ -48,7 +47,6 @@ private fun AddressPatch.applyTo(
         country = country ?: old.country,
         type = type ?: old.type,
         label = label ?: old.label,
-        formattedAddress = formattedAddress ?: old.formattedAddress
     )
 }
 

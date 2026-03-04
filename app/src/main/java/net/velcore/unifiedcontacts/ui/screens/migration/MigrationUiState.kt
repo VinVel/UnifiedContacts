@@ -12,4 +12,4 @@
 
 package net.velcore.unifiedcontacts.ui.screens.migration
 
-data class MigrationUiState()
+data class MigrationUiState(val placeholder: String = "")

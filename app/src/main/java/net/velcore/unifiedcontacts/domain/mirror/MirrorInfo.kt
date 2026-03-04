@@ -12,4 +12,4 @@
 
 package net.velcore.unifiedcontacts.domain.mirror
 
-data class MirrorInfo()
+data class MirrorInfo(val placeholder: String = "")

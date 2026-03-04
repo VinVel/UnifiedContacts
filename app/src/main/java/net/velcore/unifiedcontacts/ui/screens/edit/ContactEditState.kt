@@ -12,4 +12,4 @@
 
 package net.velcore.unifiedcontacts.ui.screens.edit
 
-data class ContactEditState()
+data class ContactEditState(val placeholder: String = "")

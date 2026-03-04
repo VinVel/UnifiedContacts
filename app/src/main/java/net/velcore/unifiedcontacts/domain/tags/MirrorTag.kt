@@ -12,4 +12,4 @@
 
 package net.velcore.unifiedcontacts.domain.tags
 
-data class MirrorTag()
+data class MirrorTag(val placeholder: String = "")

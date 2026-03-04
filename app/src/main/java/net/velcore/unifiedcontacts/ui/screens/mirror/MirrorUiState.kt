@@ -12,4 +12,4 @@
 
 package net.velcore.unifiedcontacts.ui.screens.mirror
 
-data class MirrorUiState()
+data class MirrorUiState(val placeholder: String = "")

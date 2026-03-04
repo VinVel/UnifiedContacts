@@ -12,4 +12,4 @@
 
 package net.velcore.unifiedcontacts.domain.migration
 
-data class MigrationPlan()
+data class MigrationPlan(val placeholder: String = "")

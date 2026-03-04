@@ -41,7 +41,7 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    implementation("com.github.vestrel00:contacts-android:0.5.0")
-    implementation("com.bettermile:address-formatter-kotlin:0.4.7")
-    implementation("io.github.droibit.oss-licenses-android:ui-compose-material3:0.10.0")
+    implementation(libs.contacts.android)
+    implementation(libs.address.formatter.kotlin)
+    implementation(libs.oss.licenses.android.ui.compose.material3)
 }

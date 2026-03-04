@@ -7,6 +7,9 @@ espressoCore = "3.7.0"
 appcompat = "1.7.1"
 material = "1.10.0"
 comGoogleAndroidGmsOssLicensesPluginGradlePlugin = "0.10.10"
+contactsAndroid = "0.5.0"
+addressFormatterKotlin = "0.4.7"
+ossLicensesAndroidUiComposeMaterial3 = "0.10.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -16,6 +19,9 @@ androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-co
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 material = { group = "com.google.android.material", name = "material", version = "1.13.0" }
 com-google-android-gms-oss-licenses-plugin-gradle-plugin = { group = "com.google.android.gms.oss-licenses-plugin", name = "com.google.android.gms.oss-licenses-plugin.gradle.plugin", version.ref = "comGoogleAndroidGmsOssLicensesPluginGradlePlugin" }
+contacts-android = { group = "com.github.vestrel00", name = "contacts-android", version.ref = "contactsAndroid" }
+address-formatter-kotlin = { group = "com.bettermile", name = "address-formatter-kotlin", version.ref = "addressFormatterKotlin" }
+oss-licenses-android-ui-compose-material3 = { group = "io.github.droibit.oss-licenses-android", name = "ui-compose-material3", version.ref = "ossLicensesAndroidUiComposeMaterial3" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -13,13 +13,27 @@
 package net.velcore.unifiedcontacts.system
 
 class AggregationSupervisor {
-    fun buildContactListUiData(names: List<String>): ContactListUiData {
+    fun buildContactListUiData(
+        names: List<String>,
+        photoThumbnailUris: List<String?>,
+    ): ContactListUiData {
         val grouped = names.groupBy { it.first().uppercaseChar() }.toSortedMap()
         var nextKey = 0L
+        var itemIndex = 0
         val rows = buildList {
             grouped.forEach { (letter, entries) ->
                 add(ContactRow.Header(letter = letter, stableKey = nextKey++))
-                entries.forEach { add(ContactRow.Item(name = it, stableKey = nextKey++)) }
+                entries.forEach { name ->
+                    val photoUri = photoThumbnailUris.getOrNull(itemIndex)
+                    add(
+                        ContactRow.Item(
+                            name = name,
+                            photoThumbnailUri = photoUri,
+                            stableKey = nextKey++,
+                        ),
+                    )
+                    itemIndex++
+                }
             }
         }
         val firstIndexByLetter = buildMap {
@@ -77,6 +91,7 @@ sealed interface ContactRow {
 
     data class Item(
         val name: String,
+        val photoThumbnailUri: String?,
         override val stableKey: Long,
     ): ContactRow {
         override val contentType: Int = 1

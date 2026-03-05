@@ -10,6 +10,6 @@
  * Project home: unifiedcontacts.velcore.net
  */
 
-package net.velcore.unifiedcontacts.ui.screens
+package net.velcore.unifiedcontacts.ui.screens.list
 
 data class ContactListState(val placeholder: String = "")

@@ -26,7 +26,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.Modifier
 import net.velcore.unifiedcontacts.data.repository.ContactsRepository
-import net.velcore.unifiedcontacts.ui.screens.ContactListScreen
+import net.velcore.unifiedcontacts.ui.screens.list.ContactListScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

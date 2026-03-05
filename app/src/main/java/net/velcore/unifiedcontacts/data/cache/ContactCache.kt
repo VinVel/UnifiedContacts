@@ -18,6 +18,7 @@ object ContactCache {
     private const val CACHE_KEY_ALL_ACCOUNTS = "__ALL_ACCOUNTS__"
     private val lock = Any()
     private val contactNamesByAccount = mutableMapOf<String, List<String>>()
+    private val contactPhotoThumbnailUrisByAccount = mutableMapOf<String, List<String?>>()
 
     fun getContactNames(accountRef: AccountRef?): List<String>? {
         val key = cacheKey(accountRef)
@@ -33,9 +34,24 @@ object ContactCache {
         }
     }
 
+    fun getContactPhotoThumbnailUris(accountRef: AccountRef?): List<String?>? {
+        val key = cacheKey(accountRef)
+        synchronized(lock) {
+            return contactPhotoThumbnailUrisByAccount[key]
+        }
+    }
+
+    fun putContactPhotoThumbnailUris(accountRef: AccountRef?, uris: List<String?>) {
+        val key = cacheKey(accountRef)
+        synchronized(lock) {
+            contactPhotoThumbnailUrisByAccount[key] = uris
+        }
+    }
+
     fun clearAll() {
         synchronized(lock) {
             contactNamesByAccount.clear()
+            contactPhotoThumbnailUrisByAccount.clear()
         }
     }
 

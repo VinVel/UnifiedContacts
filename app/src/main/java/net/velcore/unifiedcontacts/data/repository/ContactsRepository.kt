@@ -53,6 +53,37 @@ class ContactsRepository(private val context: Context) {
         Log.d(TAG, "clearContactNamesCache: cleared")
     }
 
+    fun getAllContactPhotoThumbnailUris(
+        accountRef: AccountRef? = null,
+        forceRefresh: Boolean = false,
+    ): List<String?> {
+        if (!forceRefresh) {
+            ContactCache.getContactPhotoThumbnailUris(accountRef)?.let {
+                Log.d(TAG, "getAllContactPhotoThumbnailUris: cache hit (size=${it.size})")
+                return it
+            }
+        }
+        Log.d(TAG, "getAllContactPhotoThumbnailUris: cache miss, querying ContactsProvider")
+
+        val query = Contacts(context)
+            .query()
+            .orderBy(ContactsFields.DisplayNamePrimary.asc())
+
+        val contacts =
+            if (accountRef != null) {query.accounts(Account(accountRef.name, accountRef.type)).find()}
+            else {query.find()} //this is useful for when the user wants to view their contact from all Accounts simultaneously
+
+        val uris = ArrayList<String?>(contacts.size)
+        contacts.forEach { contact ->
+            val displayName = contact.displayNamePrimary
+            if (displayName.isNullOrBlank()) return@forEach
+            uris.add(contact.photoThumbnailUri?.toString())
+        }
+        ContactCache.putContactPhotoThumbnailUris(accountRef, uris)
+        Log.d(TAG, "getAllContactPhotoThumbnailUris: cached result (size=${uris.size})")
+        return uris
+    }
+
     companion object {
         private const val TAG = "ContactsRepository"
     }

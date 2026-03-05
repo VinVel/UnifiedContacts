@@ -10,7 +10,7 @@
  * Project home: unifiedcontacts.velcore.net
  */
 
-package net.velcore.unifiedcontacts.ui.screens
+package net.velcore.unifiedcontacts.ui.screens.list
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -45,6 +45,9 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -112,10 +115,10 @@ fun ContactListScreen(
         if (!hasPermission) return@LaunchedEffect
         isLoading = true
         contactListUiData = withContext(Dispatchers.IO) {
-            repository.getAllContactNames().let { names ->
-                withContext(Dispatchers.Default) {
-                    aggregationSupervisor.buildContactListUiData(names)
-                }
+            val names = repository.getAllContactNames()
+            val photoUris = repository.getAllContactPhotoThumbnailUris()
+            withContext(Dispatchers.Default) {
+                aggregationSupervisor.buildContactListUiData(names, photoUris)
             }
         }
         isLoading = false
@@ -125,10 +128,10 @@ fun ContactListScreen(
         scope.launch {
             isRefreshing = true
             contactListUiData = withContext(Dispatchers.IO) {
-                repository.getAllContactNames(forceRefresh = forceRefresh).let { names ->
-                    withContext(Dispatchers.Default) {
-                        aggregationSupervisor.buildContactListUiData(names)
-                    }
+                val names = repository.getAllContactNames(forceRefresh = forceRefresh)
+                val photoUris = repository.getAllContactPhotoThumbnailUris(forceRefresh = forceRefresh)
+                withContext(Dispatchers.Default) {
+                    aggregationSupervisor.buildContactListUiData(names, photoUris)
                 }
             }
             isRefreshing = false
@@ -229,12 +232,12 @@ private fun AlphabetSlider(
     val hapticFeedback = LocalHapticFeedback.current
     val vibrator = remember { context.getSystemService(Vibrator::class.java) }
     val alphabet = remember { ('A'..'Z').toList() }
-    var activeHeightPx by remember { mutableStateOf(0f) }
+    var activeHeightPx by remember { mutableFloatStateOf(0f) }
     var currentLetter by remember { mutableStateOf<Char?>(null) }
-    var currentTouchYPx by remember { mutableStateOf(0f) }
+    var currentTouchYPx by remember { mutableFloatStateOf(0f) }
     var clearHighlightJob by remember { mutableStateOf<Job?>(null) }
-    var lastJumpIndex by remember { mutableStateOf(-1) }
-    var lastHapticAtMs by remember { mutableStateOf(0L) }
+    var lastJumpIndex by remember { mutableIntStateOf(-1) }
+    var lastHapticAtMs by remember { mutableLongStateOf(0L) }
     val bufferPercent = SIDEBAR_BUFFER_PERCENT.coerceIn(0, 49)
     val topBottomWeight = bufferPercent.toFloat()
     val activeWeight = (100 - (bufferPercent * 2)).toFloat()

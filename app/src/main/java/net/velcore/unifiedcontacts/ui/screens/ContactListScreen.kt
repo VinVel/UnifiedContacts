@@ -14,15 +14,12 @@ package net.velcore.unifiedcontacts.ui.screens
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.graphics.Typeface
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.SystemClock
-import android.view.ViewGroup
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresPermission
-import androidx.appcompat.widget.AppCompatTextView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -66,11 +63,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.color.MaterialColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -78,11 +72,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.velcore.unifiedcontacts.R
 import net.velcore.unifiedcontacts.data.repository.ContactsRepository
+import net.velcore.unifiedcontacts.system.AggregationSupervisor
+import net.velcore.unifiedcontacts.system.ContactListUiData
 
 @Composable
 fun ContactListScreen(
     repository: ContactsRepository,
 ) {
+    val aggregationSupervisor = remember { AggregationSupervisor() }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var hasPermission by remember {
@@ -117,7 +114,7 @@ fun ContactListScreen(
         contactListUiData = withContext(Dispatchers.IO) {
             repository.getAllContactNames().let { names ->
                 withContext(Dispatchers.Default) {
-                    buildContactListUiData(names)
+                    aggregationSupervisor.buildContactListUiData(names)
                 }
             }
         }
@@ -130,7 +127,7 @@ fun ContactListScreen(
             contactListUiData = withContext(Dispatchers.IO) {
                 repository.getAllContactNames(forceRefresh = forceRefresh).let { names ->
                     withContext(Dispatchers.Default) {
-                        buildContactListUiData(names)
+                        aggregationSupervisor.buildContactListUiData(names)
                     }
                 }
             }
@@ -207,7 +204,13 @@ private fun AlphabeticalContactList(
             sections = uiData.sections,
             firstIndexByLetter = uiData.firstIndexByLetter,
             onJump = { position ->
-                recyclerView?.scrollToPosition(position)
+                val rv = recyclerView
+                val lm = rv?.layoutManager as? LinearLayoutManager
+                if (lm != null) {
+                    lm.scrollToPositionWithOffset(position, 0)
+                } else {
+                    rv?.scrollToPosition(position)
+                }
             },
         )
     }
@@ -255,13 +258,15 @@ private fun AlphabetSlider(
         }
     }
 
-    fun jumpByTouch(touch: Offset) {
+    val aggregationSupervisor = remember { AggregationSupervisor() }
+
+    fun jumpByTouchViaSupervisor(touch: Offset) {
         clearHighlightJob?.cancel()
         if (activeHeightPx <= 0f) return
         currentTouchYPx = touch.y.coerceIn(0f, activeHeightPx)
         val rawIndex = ((currentTouchYPx / activeHeightPx) * alphabet.size).toInt()
         val touchedIndex = rawIndex.coerceIn(0, alphabet.lastIndex)
-        val targetLetter = nearestAvailableLetter(
+        val targetLetter = aggregationSupervisor.nearestAvailableLetter(
             startIndex = touchedIndex,
             alphabet = alphabet,
             available = sectionsSet,
@@ -306,7 +311,7 @@ private fun AlphabetSlider(
                     .pointerInput(sections, firstIndexByLetter) {
                         detectDragGestures(
                             onDragStart = { offset ->
-                                jumpByTouch(offset)
+                                jumpByTouchViaSupervisor(offset)
                             },
                             onDragEnd = {
                                 lastJumpIndex = -1
@@ -325,7 +330,7 @@ private fun AlphabetSlider(
                                 }
                             },
                             onDrag = { change, _ ->
-                                jumpByTouch(change.position)
+                                jumpByTouchViaSupervisor(change.position)
                             },
                         )
                     },
@@ -437,156 +442,6 @@ private fun PermissionRequired(
             }
         }
     }
-}
-
-private sealed interface ContactRow {
-    val stableKey: Long
-    val contentType: Int
-
-    data class Header(
-        val letter: Char,
-        override val stableKey: Long,
-    ) : ContactRow {
-        override val contentType: Int = 0
-    }
-
-    data class Item(
-        val name: String,
-        override val stableKey: Long,
-    ) : ContactRow {
-        override val contentType: Int = 1
-    }
-}
-
-private data class ContactListUiData(
-    val sections: List<Char>,
-    val rows: List<ContactRow>,
-    val firstIndexByLetter: Map<Char, Int>,
-)
-
-private class ContactRowsAdapter : ListAdapter<ContactRow, RecyclerView.ViewHolder>(DiffCallback) {
-    init {
-        setHasStableIds(true)
-    }
-
-    override fun getItemId(position: Int): Long = getItem(position).stableKey
-
-    override fun getItemViewType(position: Int): Int = getItem(position).contentType
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        val textView = AppCompatTextView(parent.context).apply {
-            layoutParams = RecyclerView.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            )
-        }
-        return if (viewType == 0) {
-            HeaderViewHolder(textView)
-        } else {
-            ItemViewHolder(textView)
-        }
-    }
-
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        when (val row = getItem(position)) {
-            is ContactRow.Header -> (holder as HeaderViewHolder).bind(row.letter)
-            is ContactRow.Item -> (holder as ItemViewHolder).bind(row.name)
-        }
-    }
-
-    private class HeaderViewHolder(
-        private val textView: AppCompatTextView,
-    ) : RecyclerView.ViewHolder(textView) {
-        fun bind(letter: Char) {
-            textView.text = letter.toString()
-            textView.setTypeface(null, Typeface.BOLD)
-            textView.setTextSize(18f)
-            textView.setPadding(16.dpToPx(textView), 8.dpToPx(textView), 16.dpToPx(textView), 8.dpToPx(textView))
-            textView.setTextColor(
-                MaterialColors.getColor(
-                    textView,
-                    com.google.android.material.R.attr.colorOnSurface,
-                ),
-            )
-        }
-    }
-
-    private class ItemViewHolder(
-        private val textView: AppCompatTextView,
-    ) : RecyclerView.ViewHolder(textView) {
-        fun bind(name: String) {
-            textView.text = name
-            textView.setTypeface(null, Typeface.NORMAL)
-            textView.setTextSize(16f)
-            textView.setPadding(24.dpToPx(textView), 10.dpToPx(textView), 24.dpToPx(textView), 10.dpToPx(textView))
-            textView.setTextColor(
-                MaterialColors.getColor(
-                    textView,
-                    com.google.android.material.R.attr.colorOnSurface,
-                ),
-            )
-        }
-    }
-
-    private companion object {
-        val DiffCallback = object : DiffUtil.ItemCallback<ContactRow>() {
-            override fun areItemsTheSame(oldItem: ContactRow, newItem: ContactRow): Boolean {
-                return oldItem.stableKey == newItem.stableKey
-            }
-
-            override fun areContentsTheSame(oldItem: ContactRow, newItem: ContactRow): Boolean {
-                return oldItem == newItem
-            }
-        }
-    }
-}
-
-private fun buildContactListUiData(names: List<String>): ContactListUiData {
-    val grouped = names.groupBy { it.first().uppercaseChar() }.toSortedMap()
-    var nextKey = 0L
-    val rows = buildList {
-        grouped.forEach { (letter, entries) ->
-            add(ContactRow.Header(letter = letter, stableKey = nextKey++))
-            entries.forEach { add(ContactRow.Item(name = it, stableKey = nextKey++)) }
-        }
-    }
-    val firstIndexByLetter = buildMap {
-        rows.forEachIndexed { index, row ->
-            if (row is ContactRow.Header) put(row.letter, index)
-        }
-    }
-    return ContactListUiData(
-        sections = grouped.keys.toList(),
-        rows = rows,
-        firstIndexByLetter = firstIndexByLetter,
-    )
-}
-
-private fun nearestAvailableLetter(
-    startIndex: Int,
-    alphabet: List<Char>,
-    available: Set<Char>,
-): Char? {
-    if (available.isEmpty()) return null
-    var distance = 0
-    while (distance <= alphabet.lastIndex) {
-        val backward = startIndex - distance
-        if (backward >= 0) {
-            val letter = alphabet[backward]
-            if (available.contains(letter)) return letter
-        }
-        val forward = startIndex + distance
-        if (forward <= alphabet.lastIndex) {
-            val letter = alphabet[forward]
-            if (available.contains(letter)) return letter
-        }
-        distance++
-    }
-    return null
-}
-
-private fun Int.dpToPx(view: AppCompatTextView): Int {
-    return (this * view.resources.displayMetrics.density).toInt()
 }
 
 private const val SIDEBAR_BUFFER_PERCENT = 10

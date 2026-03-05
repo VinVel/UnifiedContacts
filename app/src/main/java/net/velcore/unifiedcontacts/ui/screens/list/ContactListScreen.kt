@@ -13,6 +13,7 @@
 package net.velcore.unifiedcontacts.ui.screens.list
 
 import android.Manifest
+import android.app.Activity
 import android.content.pm.PackageManager
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -51,21 +52,28 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers
@@ -96,6 +104,7 @@ fun ContactListScreen(
     var isLoading by remember { mutableStateOf(false) }
     var isRefreshing by remember { mutableStateOf(false) }
     var contactListUiData by remember { mutableStateOf<ContactListUiData?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
     var requestPermissionNow by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -144,7 +153,10 @@ fun ContactListScreen(
         )
         isLoading || contactListUiData == null -> LoadingState()
         else -> RefreshableContactList(
+            aggregationSupervisor = aggregationSupervisor,
             uiData = contactListUiData!!,
+            searchQuery = searchQuery,
+            onSearchQueryChange = { searchQuery = it },
             isRefreshing = isRefreshing,
             onRefresh = { refreshContacts(forceRefresh = true) },
         )
@@ -154,22 +166,66 @@ fun ContactListScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RefreshableContactList(
+    aggregationSupervisor: AggregationSupervisor,
     uiData: ContactListUiData,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
     isRefreshing: Boolean,
     onRefresh: () -> Unit,
 ) {
+    val filteredUiData = remember(uiData, searchQuery, aggregationSupervisor) {
+        aggregationSupervisor.filterContactListUiData(uiData, searchQuery)
+    }
+    val screenBackground = MaterialTheme.colorScheme.background
+    val view = LocalView.current
+
+    SideEffect {
+        val window = (view.context as? Activity)?.window ?: return@SideEffect
+        window.statusBarColor = screenBackground.toArgb()
+        val controller = WindowCompat.getInsetsController(window, view)
+        controller.isAppearanceLightStatusBars = screenBackground.luminance() > 0.5f
+    }
+
     PullToRefreshBox(
         isRefreshing = isRefreshing,
         onRefresh = onRefresh,
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(screenBackground)
     ) {
-        AlphabeticalContactList(uiData = uiData)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .background(screenBackground)
+        ) {
+            AlphabeticalContactList(
+                uiData = filteredUiData,
+                searchQuery = searchQuery,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = SEARCH_BAR_CONTAINER_HEIGHT_DP)
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.Transparent)
+                    .zIndex(1f)
+            ) {
+                ContactListSearchBar(
+                    query = searchQuery,
+                    onQueryChange = onSearchQueryChange,
+                    backgroundColor = screenBackground,
+                )
+            }
+        }
     }
 }
 
 @Composable
 private fun AlphabeticalContactList(
     uiData: ContactListUiData,
+    searchQuery: String,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
@@ -177,9 +233,7 @@ private fun AlphabeticalContactList(
     var recyclerView by remember { mutableStateOf<RecyclerView?>(null) }
 
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .statusBarsPadding(),
+        modifier = modifier.fillMaxSize(),
     ) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
@@ -197,6 +251,7 @@ private fun AlphabeticalContactList(
                 }
             },
             update = {
+                recyclerAdapter.updateSearchQuery(searchQuery)
                 recyclerAdapter.submitList(uiData.rows)
                 recyclerView = it
             },
@@ -448,6 +503,7 @@ private fun PermissionRequired(
 }
 
 private const val SIDEBAR_BUFFER_PERCENT = 10
+private val SEARCH_BAR_CONTAINER_HEIGHT_DP = 72.dp
 private const val SIDEBAR_BUBBLE_SIZE_DP = 52
 private const val SIDEBAR_BUBBLE_OFFSET_X_DP = (-16)
 private const val SIDEBAR_HIGHLIGHT_CLEAR_DELAY_MS = 120L

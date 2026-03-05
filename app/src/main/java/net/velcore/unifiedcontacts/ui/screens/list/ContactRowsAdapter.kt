@@ -19,6 +19,10 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.util.LruCache
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.text.style.StyleSpan
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -31,7 +35,7 @@ import androidx.core.net.toUri
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.R
+import com.google.android.material.R as MaterialR
 import com.google.android.material.color.MaterialColors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -43,6 +47,7 @@ import net.velcore.unifiedcontacts.system.ContactRow
 
 class ContactRowsAdapter : ListAdapter<ContactRow, RecyclerView.ViewHolder>(DiffCallback) {
     private val adapterScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var searchQuery: String = ""
 
     init {
         setHasStableIds(true)
@@ -62,9 +67,21 @@ class ContactRowsAdapter : ListAdapter<ContactRow, RecyclerView.ViewHolder>(Diff
             is ContactRow.Item -> (holder as ItemViewHolder).bind(
                 name = row.name,
                 photoThumbnailUri = row.photoThumbnailUri,
+                query = searchQuery,
+                highlightColor = resolveThemeColor(
+                    view = holder.itemView,
+                    attr = androidx.appcompat.R.attr.colorPrimary,
+                    fallback = Color.BLUE,
+                ),
                 scope = adapterScope,
             )
         }
+    }
+
+    fun updateSearchQuery(query: String) {
+        if (searchQuery == query) return
+        searchQuery = query
+        notifyDataSetChanged()
     }
 
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
@@ -118,7 +135,7 @@ class ContactRowsAdapter : ListAdapter<ContactRow, RecyclerView.ViewHolder>(Diff
             setTextColor(
                 resolveThemeColor(
                     view = this,
-                    attr = R.attr.colorOnSurface,
+                    attr = MaterialR.attr.colorOnSurface,
                     fallback = Color.DKGRAY,
                 ),
             )
@@ -137,7 +154,7 @@ class ContactRowsAdapter : ListAdapter<ContactRow, RecyclerView.ViewHolder>(Diff
             setTextColor(
                 resolveThemeColor(
                     view = this,
-                    attr = R.attr.colorOnSurface,
+                    attr = MaterialR.attr.colorOnSurface,
                     fallback = Color.BLACK,
                 ),
             )
@@ -159,7 +176,7 @@ class ContactRowsAdapter : ListAdapter<ContactRow, RecyclerView.ViewHolder>(Diff
             textView.setTextColor(
                 resolveThemeColor(
                     view = textView,
-                    attr = R.attr.colorOnSurface,
+                    attr = MaterialR.attr.colorOnSurface,
                     fallback = Color.BLACK,
                 ),
             )
@@ -179,11 +196,17 @@ class ContactRowsAdapter : ListAdapter<ContactRow, RecyclerView.ViewHolder>(Diff
         fun bind(
             name: String,
             photoThumbnailUri: String?,
+            query: String,
+            highlightColor: Int,
             scope: CoroutineScope,
         ) {
             decodeJob?.cancel()
             boundPhotoUri = photoThumbnailUri
-            nameView.text = name
+            nameView.text = buildHighlightedName(
+                name = name,
+                query = query,
+                highlightColor = highlightColor,
+            )
             showInitial(name)
 
             if (photoThumbnailUri.isNullOrBlank()) return
@@ -315,11 +338,42 @@ private fun createCircleBackground(view: View): GradientDrawable {
         setColor(
             resolveThemeColor(
                 view = view,
-                attr = R.attr.colorSurface,
+                attr = MaterialR.attr.colorSurface,
                 fallback = Color.LTGRAY,
             ),
         )
     }
+}
+
+private fun buildHighlightedName(
+    name: String,
+    query: String,
+    highlightColor: Int,
+): CharSequence {
+    val normalizedQuery = query.trim()
+    if (normalizedQuery.isEmpty()) return name
+
+    val spannable = SpannableStringBuilder(name)
+    val loweredName = name.lowercase()
+    val loweredQuery = normalizedQuery.lowercase()
+    var start = loweredName.indexOf(loweredQuery)
+    while (start >= 0) {
+        val end = start + loweredQuery.length
+        spannable.setSpan(
+            ForegroundColorSpan(highlightColor),
+            start,
+            end,
+            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+        )
+        spannable.setSpan(
+            StyleSpan(Typeface.BOLD),
+            start,
+            end,
+            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+        )
+        start = loweredName.indexOf(loweredQuery, startIndex = end)
+    }
+    return spannable
 }
 
 private fun resolveThemeColor(view: View, attr: Int, fallback: Int): Int {

@@ -13,6 +13,7 @@
 
 <resources>
     <string name="app_name" translatable="false">UnifiedContacts</string>
-    <string name="contacts_permission_rationale">UnifiedContacts benötigt Zugriff auf deine Kontakte, damit es deine Kontaktliste laden und anzeigen kann.</string>
-    <string name="contacts_permission_request_button">Zugriff auf Kontakte gewähren</string>
+    <string name="contacts_permission_rationale">UnifiedContacts benoetigt Zugriff auf deine Kontakte, damit es deine Kontaktliste laden und anzeigen kann.</string>
+    <string name="contacts_permission_request_button">Zugriff auf Kontakte gewaehren</string>
+    <string name="contacts_search_placeholder">Kontakte suchen</string>
 </resources>

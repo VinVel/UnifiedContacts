@@ -70,6 +70,48 @@ class AggregationSupervisor {
         }
         return null
     }
+
+    fun filterContactListUiData(
+        source: ContactListUiData,
+        query: String,
+    ): ContactListUiData {
+        val normalizedQuery = query.trim()
+        if (normalizedQuery.isEmpty()) return source
+
+        val rows = buildList {
+            var currentHeader: ContactRow.Header? = null
+            var headerAdded = false
+            source.rows.forEach { row ->
+                when (row) {
+                    is ContactRow.Header -> {
+                        currentHeader = row
+                        headerAdded = false
+                    }
+
+                    is ContactRow.Item -> {
+                        if (!row.name.contains(normalizedQuery, ignoreCase = true)) return@forEach
+                        if (!headerAdded) {
+                            currentHeader?.let(::add)
+                            headerAdded = true
+                        }
+                        add(row)
+                    }
+                }
+            }
+        }
+
+        val firstIndexByLetter = buildMap {
+            rows.forEachIndexed { index, row ->
+                if (row is ContactRow.Header) put(row.letter, index)
+            }
+        }
+
+        return ContactListUiData(
+            sections = firstIndexByLetter.keys.toList(),
+            rows = rows,
+            firstIndexByLetter = firstIndexByLetter,
+        )
+    }
 }
 
 data class ContactListUiData(

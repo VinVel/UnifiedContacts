@@ -15,4 +15,5 @@
     <string name="app_name" translatable="false">UnifiedContacts</string>
     <string name="contacts_permission_rationale">UnifiedContacts needs access to your contacts so it can load and display your contact list.</string>
     <string name="contacts_permission_request_button">Allow Contacts Access</string>
+    <string name="contacts_search_placeholder">Search contacts</string>
 </resources>

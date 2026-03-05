@@ -41,6 +41,7 @@ android {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.profileinstaller)
     implementation(libs.material)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.ui)

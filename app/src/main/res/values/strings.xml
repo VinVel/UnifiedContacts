@@ -1,3 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) 2026 VinVel
+  ~ SPDX-License-Identifier: MPL-2.0
+  ~ Incompatible With Secondary Licenses.
+  ~
+  ~ This Source Code Form is subject to the terms of the Mozilla Public
+  ~ License, v. 2.0. If a copy of the MPL was not distributed with this
+  ~ file, You can obtain one at https://mozilla.org/MPL/2.0/.
+  ~
+  ~ Project home: unifiedcontacts.velcore.net
+  -->
+
 <resources>
-    <string name="app_name">UnifiedContacts</string>
+    <string name="app_name" translatable="false">UnifiedContacts</string>
+    <string name="contacts_permission_rationale">UnifiedContacts needs access to your contacts so it can load and display your contact list.</string>
+    <string name="contacts_permission_request_button">Allow Contacts Access</string>
 </resources>

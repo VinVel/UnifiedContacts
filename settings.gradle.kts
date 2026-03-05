@@ -27,4 +27,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "UnifiedContacts"
 include(":app")
- 
+include(":baselineprofile")

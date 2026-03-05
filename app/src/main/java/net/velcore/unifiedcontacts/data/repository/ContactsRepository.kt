@@ -14,13 +14,26 @@ package net.velcore.unifiedcontacts.data.repository
 
 import android.accounts.Account
 import android.content.Context
+import android.util.Log
 import contacts.core.Contacts
 import contacts.core.ContactsFields
 import contacts.core.asc
+import net.velcore.unifiedcontacts.data.cache.ContactCache
 import net.velcore.unifiedcontacts.domain.contact.AccountRef
 
 class ContactsRepository(private val context: Context) {
-    fun getAllContactNames(accountRef: AccountRef? = null): List<String> {
+    fun getAllContactNames(
+        accountRef: AccountRef? = null,
+        forceRefresh: Boolean = false,
+    ): List<String> {
+        if (!forceRefresh) {
+            ContactCache.getContactNames(accountRef)?.let {
+                Log.d(TAG, "getAllContactNames: cache hit (size=${it.size})")
+                return it
+            }
+        }
+        Log.d(TAG, "getAllContactNames: cache miss, querying ContactsProvider")
+
         val query = Contacts(context)
             .query()
             .orderBy(ContactsFields.DisplayNamePrimary.asc())
@@ -29,6 +42,18 @@ class ContactsRepository(private val context: Context) {
             if (accountRef != null) {query.accounts(Account(accountRef.name, accountRef.type)).find()}
             else {query.find()} //this is useful for when the user wants to view their contact from all Accounts simultaneously
 
-        return contacts.mapNotNull { it.displayNamePrimary }
+        val names = contacts.mapNotNull { it.displayNamePrimary }
+        ContactCache.putContactNames(accountRef, names)
+        Log.d(TAG, "getAllContactNames: cached result (size=${names.size})")
+        return names
+    }
+
+    fun clearContactNamesCache() {
+        ContactCache.clearAll()
+        Log.d(TAG, "clearContactNamesCache: cleared")
+    }
+
+    companion object {
+        private const val TAG = "ContactsRepository"
     }
 }

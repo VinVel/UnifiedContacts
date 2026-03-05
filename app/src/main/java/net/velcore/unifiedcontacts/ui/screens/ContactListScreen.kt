@@ -14,15 +14,18 @@ package net.velcore.unifiedcontacts.ui.screens
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Typeface
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.SystemClock
+import android.view.ViewGroup
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresPermission
+import androidx.appcompat.widget.AppCompatTextView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,30 +33,24 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,26 +62,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.color.MaterialColors
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.math.abs
-import kotlin.math.exp
 import net.velcore.unifiedcontacts.R
 import net.velcore.unifiedcontacts.data.repository.ContactsRepository
 
@@ -94,7 +85,6 @@ fun ContactListScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val listState = rememberLazyListState()
     var hasPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(
@@ -125,14 +115,11 @@ fun ContactListScreen(
         if (!hasPermission) return@LaunchedEffect
         isLoading = true
         contactListUiData = withContext(Dispatchers.IO) {
-            repository.getAllContactNames()
-                .filter { it.isNotBlank() }
-                .sortedBy { it.lowercase() }
-                .let { sortedNames ->
-                    withContext(Dispatchers.Default) {
-                        buildContactListUiData(sortedNames)
-                    }
+            repository.getAllContactNames().let { names ->
+                withContext(Dispatchers.Default) {
+                    buildContactListUiData(names)
                 }
+            }
         }
         isLoading = false
     }
@@ -141,14 +128,11 @@ fun ContactListScreen(
         scope.launch {
             isRefreshing = true
             contactListUiData = withContext(Dispatchers.IO) {
-                repository.getAllContactNames(forceRefresh = forceRefresh)
-                    .filter { it.isNotBlank() }
-                    .sortedBy { it.lowercase() }
-                    .let { sortedNames ->
-                        withContext(Dispatchers.Default) {
-                            buildContactListUiData(sortedNames)
-                        }
+                repository.getAllContactNames(forceRefresh = forceRefresh).let { names ->
+                    withContext(Dispatchers.Default) {
+                        buildContactListUiData(names)
                     }
+                }
             }
             isRefreshing = false
         }
@@ -161,7 +145,6 @@ fun ContactListScreen(
         isLoading || contactListUiData == null -> LoadingState()
         else -> RefreshableContactList(
             uiData = contactListUiData!!,
-            listState = listState,
             isRefreshing = isRefreshing,
             onRefresh = { refreshContacts(forceRefresh = true) },
         )
@@ -172,7 +155,6 @@ fun ContactListScreen(
 @Composable
 private fun RefreshableContactList(
     uiData: ContactListUiData,
-    listState: LazyListState,
     isRefreshing: Boolean,
     onRefresh: () -> Unit,
 ) {
@@ -181,80 +163,62 @@ private fun RefreshableContactList(
         onRefresh = onRefresh,
         modifier = Modifier.fillMaxSize(),
     ) {
-        AlphabeticalContactList(
-            uiData = uiData,
-            listState = listState,
-        )
+        AlphabeticalContactList(uiData = uiData)
     }
 }
 
 @Composable
 private fun AlphabeticalContactList(
     uiData: ContactListUiData,
-    listState: LazyListState,
     modifier: Modifier = Modifier,
 ) {
+    val density = LocalDensity.current
+    val recyclerAdapter = remember { ContactRowsAdapter() }
+    var recyclerView by remember { mutableStateOf<RecyclerView?>(null) }
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .statusBarsPadding(),
     ) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(end = 40.dp),
-            state = listState,
-        ) {
-            itemsIndexed(
-                items = uiData.rows,
-                key = { index, row ->
-                    when (row) {
-                        is ContactRow.Header -> "header_${row.letter}"
-                        is ContactRow.Item -> "item_${index}_${row.name}"
-                    }
-                },
-                contentType = { _, row ->
-                    when (row) {
-                        is ContactRow.Header -> "header"
-                        is ContactRow.Item -> "item"
-                    }
-                },
-            ) { _, row ->
-                when (row) {
-                    is ContactRow.Header -> Text(
-                        text = row.letter.toString(),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                    )
-                    is ContactRow.Item -> Text(
-                        text = row.name,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp, vertical = 10.dp),
-                    )
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { context ->
+                RecyclerView(context).apply {
+                    layoutManager = LinearLayoutManager(context)
+                    adapter = recyclerAdapter
+                    setHasFixedSize(true)
+                    itemAnimator = null
+                    overScrollMode = RecyclerView.OVER_SCROLL_NEVER
+                    clipToPadding = false
+                    setItemViewCacheSize(40)
+                    setPadding(0, 0, with(density) { 44.dp.roundToPx() }, 0)
+                    recyclerView = this
                 }
-            }
-        }
+            },
+            update = {
+                recyclerAdapter.submitList(uiData.rows)
+                recyclerView = it
+            },
+        )
 
         AlphabetSlider(
             modifier = Modifier.align(Alignment.CenterEnd),
             sections = uiData.sections,
             firstIndexByLetter = uiData.firstIndexByLetter,
-            listState = listState,
+            onJump = { position ->
+                recyclerView?.scrollToPosition(position)
+            },
         )
     }
 }
 
 @Composable
-@OptIn(FlowPreview::class)
 private fun AlphabetSlider(
     modifier: Modifier = Modifier,
     sections: List<Char>,
     firstIndexByLetter: Map<Char, Int>,
-    listState: LazyListState,
+    onJump: (Int) -> Unit,
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -264,26 +228,14 @@ private fun AlphabetSlider(
     val alphabet = remember { ('A'..'Z').toList() }
     var activeHeightPx by remember { mutableStateOf(0f) }
     var currentLetter by remember { mutableStateOf<Char?>(null) }
+    var currentTouchYPx by remember { mutableStateOf(0f) }
     var clearHighlightJob by remember { mutableStateOf<Job?>(null) }
-    var lastScrollIndex by remember { mutableStateOf(-1) }
+    var lastJumpIndex by remember { mutableStateOf(-1) }
     var lastHapticAtMs by remember { mutableStateOf(0L) }
-    var pendingScrollTarget by remember { mutableStateOf<Int?>(null) }
     val bufferPercent = SIDEBAR_BUFFER_PERCENT.coerceIn(0, 49)
     val topBottomWeight = bufferPercent.toFloat()
     val activeWeight = (100 - (bufferPercent * 2)).toFloat()
     val sectionsSet = remember(sections) { sections.toSet() }
-
-    LaunchedEffect(listState) {
-        snapshotFlow { pendingScrollTarget }
-            .filterNotNull()
-            .distinctUntilChanged()
-            .debounce(SIDEBAR_SCROLL_DEBOUNCE_MS)
-            .collectLatest { target ->
-                if (listState.firstVisibleItemIndex != target) {
-                    listState.scrollToItem(target)
-                }
-            }
-    }
 
     @RequiresPermission(Manifest.permission.VIBRATE)
     fun emitTickHaptic() {
@@ -306,25 +258,26 @@ private fun AlphabetSlider(
     fun jumpByTouch(touch: Offset) {
         clearHighlightJob?.cancel()
         if (activeHeightPx <= 0f) return
-        val rawIndex = ((touch.y / activeHeightPx) * alphabet.size).toInt()
+        currentTouchYPx = touch.y.coerceIn(0f, activeHeightPx)
+        val rawIndex = ((currentTouchYPx / activeHeightPx) * alphabet.size).toInt()
         val touchedIndex = rawIndex.coerceIn(0, alphabet.lastIndex)
         val targetLetter = nearestAvailableLetter(
             startIndex = touchedIndex,
             alphabet = alphabet,
-            available = sections.toSet(),
+            available = sectionsSet,
         ) ?: return
         if (currentLetter != targetLetter) emitTickHaptic()
         currentLetter = targetLetter
         val target = firstIndexByLetter[targetLetter] ?: return
-        if (target == lastScrollIndex) return
-        lastScrollIndex = target
-        pendingScrollTarget = target
+        if (target == lastJumpIndex) return
+        lastJumpIndex = target
+        onJump(target)
     }
 
     Box(
         modifier = modifier
             .fillMaxHeight()
-            .width(36.dp)
+            .width(74.dp)
             .padding(end = 8.dp),
     ) {
         val dynamicTextSize = with(density) {
@@ -342,21 +295,21 @@ private fun AlphabetSlider(
 
         Column(
             modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            horizontalAlignment = Alignment.End,
         ) {
             Spacer(modifier = Modifier.weight(topBottomWeight))
 
             Box(
                 modifier = Modifier
                     .weight(activeWeight)
+                    .width(74.dp)
                     .pointerInput(sections, firstIndexByLetter) {
                         detectDragGestures(
                             onDragStart = { offset ->
                                 jumpByTouch(offset)
                             },
                             onDragEnd = {
-                                lastScrollIndex = -1
-                                pendingScrollTarget = null
+                                lastJumpIndex = -1
                                 clearHighlightJob?.cancel()
                                 clearHighlightJob = scope.launch {
                                     delay(SIDEBAR_HIGHLIGHT_CLEAR_DELAY_MS)
@@ -364,8 +317,7 @@ private fun AlphabetSlider(
                                 }
                             },
                             onDragCancel = {
-                                lastScrollIndex = -1
-                                pendingScrollTarget = null
+                                lastJumpIndex = -1
                                 clearHighlightJob?.cancel()
                                 clearHighlightJob = scope.launch {
                                     delay(SIDEBAR_HIGHLIGHT_CLEAR_DELAY_MS)
@@ -378,50 +330,71 @@ private fun AlphabetSlider(
                         )
                     },
             ) {
+                currentLetter?.let { selected ->
+                    val bubbleSizePx = with(density) { SIDEBAR_BUBBLE_SIZE_DP.dp.toPx() }
+                    val halfBubblePx = bubbleSizePx / 2f
+                    val bubbleYPx = (currentTouchYPx - halfBubblePx)
+                        .coerceIn(
+                            0f,
+                            (activeHeightPx - bubbleSizePx).coerceAtLeast(0f),
+                        )
+                    Box(
+                        modifier = Modifier
+                            .offset(
+                                x = SIDEBAR_BUBBLE_OFFSET_X_DP.dp,
+                                y = with(density) { bubbleYPx.toDp() },
+                            )
+                            .align(Alignment.TopStart)
+                            .width(SIDEBAR_BUBBLE_SIZE_DP.dp)
+                            .height(SIDEBAR_BUBBLE_SIZE_DP.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.primary,
+                                shape = RoundedCornerShape((SIDEBAR_BUBBLE_SIZE_DP / 2f).dp),
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = selected.toString(),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                    }
+                }
+
                 Column(
                     modifier = Modifier
                         .fillMaxHeight()
+                        .width(32.dp)
+                        .align(Alignment.CenterEnd)
                         .onSizeChanged { activeHeightPx = it.height.toFloat() },
                     verticalArrangement = Arrangement.SpaceEvenly,
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    val selectedIndex = currentLetter?.let(alphabet::indexOf) ?: -1
-                    val rowHeightPx = if (activeHeightPx > 0f) activeHeightPx / alphabet.size else 0f
-                    val baseFontPx = with(density) { dynamicTextSize.toPx() }
-                    val maxSafeScale = if (rowHeightPx > 0f && baseFontPx > 0f) {
-                        ((rowHeightPx * 0.82f) / baseFontPx).coerceIn(1f, 1.35f)
-                    } else {
-                        1.2f
-                    }
-                    alphabet.forEachIndexed { index, letter ->
-                        val visual = remember(letter, selectedIndex, maxSafeScale, sectionsSet) {
-                            computeLetterVisual(
-                                letter = letter,
-                                selectedIndex = selectedIndex,
-                                index = index,
-                                maxSafeScale = maxSafeScale,
-                                enabled = sectionsSet.contains(letter),
-                            )
-                        }
-
+                    alphabet.forEach { letter ->
+                        val enabled = sectionsSet.contains(letter)
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxWidth(),
                             contentAlignment = Alignment.Center,
                         ) {
-                            SidebarLetter(
-                                letter = letter,
-                                visual = visual,
-                                currentLetter = currentLetter,
-                                fontSize = dynamicTextSize,
-                                onClick = {
+                            Text(
+                                text = letter.toString(),
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = dynamicTextSize),
+                                color = when {
+                                    !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+                                    currentLetter == letter -> MaterialTheme.colorScheme.primary
+                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                                modifier = Modifier.clickable(enabled = enabled) {
                                     clearHighlightJob?.cancel()
-                                    val target = firstIndexByLetter[letter] ?: return@SidebarLetter
-                                    lastScrollIndex = target
+                                    val target = firstIndexByLetter[letter] ?: return@clickable
+                                    lastJumpIndex = target
                                     if (currentLetter != letter) emitTickHaptic()
                                     currentLetter = letter
-                                    pendingScrollTarget = target
+                                    val idx = alphabet.indexOf(letter).coerceAtLeast(0)
+                                    currentTouchYPx = (activeHeightPx / alphabet.size) * (idx + 0.5f)
+                                    onJump(target)
                                     clearHighlightJob = scope.launch {
                                         delay(SIDEBAR_HIGHLIGHT_CLEAR_DELAY_MS)
                                         currentLetter = null
@@ -467,8 +440,22 @@ private fun PermissionRequired(
 }
 
 private sealed interface ContactRow {
-    data class Header(val letter: Char) : ContactRow
-    data class Item(val name: String) : ContactRow
+    val stableKey: Long
+    val contentType: Int
+
+    data class Header(
+        val letter: Char,
+        override val stableKey: Long,
+    ) : ContactRow {
+        override val contentType: Int = 0
+    }
+
+    data class Item(
+        val name: String,
+        override val stableKey: Long,
+    ) : ContactRow {
+        override val contentType: Int = 1
+    }
 }
 
 private data class ContactListUiData(
@@ -477,102 +464,90 @@ private data class ContactListUiData(
     val firstIndexByLetter: Map<Char, Int>,
 )
 
-@Immutable
-private data class LetterVisual(
-    val enabled: Boolean,
-    val targetScale: Float,
-    val leftShiftDp: Float,
-    val proximity: Float,
-)
-
-private fun computeLetterVisual(
-    letter: Char,
-    selectedIndex: Int,
-    index: Int,
-    maxSafeScale: Float,
-    enabled: Boolean,
-): LetterVisual {
-    val distance = if (selectedIndex < 0) Int.MAX_VALUE else abs(index - selectedIndex)
-    val targetScaleRaw = when {
-        selectedIndex < 0 -> 1f
-        distance == 0 -> 2.25f
-        distance == 1 -> 1.72f
-        distance == 2 -> 1.40f
-        distance == 3 -> 1.18f
-        distance == 4 -> 1.06f
-        else -> 1f
-    }
-    val leftShiftDp = if (selectedIndex < 0) {
-        0f
-    } else {
-        val sigma = 1.8f
-        val normalized = exp(-((distance * distance).toFloat()) / (2f * sigma * sigma))
-        -40f * normalized
-    }
-    val proximity = if (selectedIndex < 0) {
-        0f
-    } else {
-        (1f - (distance / 5f)).coerceIn(0f, 1f)
-    }
-    return LetterVisual(
-        enabled = enabled,
-        targetScale = minOf(targetScaleRaw, maxSafeScale),
-        leftShiftDp = leftShiftDp,
-        proximity = proximity,
-    )
-}
-
-@Composable
-private fun SidebarLetter(
-    letter: Char,
-    visual: LetterVisual,
-    currentLetter: Char?,
-    fontSize: androidx.compose.ui.unit.TextUnit,
-    onClick: () -> Unit,
-) {
-    val animatedScale by animateFloatAsState(
-        targetValue = visual.targetScale,
-        animationSpec = tween(durationMillis = 90),
-        label = "sidebarLetterScale",
-    )
-    val displayColor = when {
-        !visual.enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
-        currentLetter != null -> lerp(
-            MaterialTheme.colorScheme.onSurfaceVariant,
-            MaterialTheme.colorScheme.primary,
-            visual.proximity,
-        )
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
+private class ContactRowsAdapter : ListAdapter<ContactRow, RecyclerView.ViewHolder>(DiffCallback) {
+    init {
+        setHasStableIds(true)
     }
 
-    Text(
-        text = letter.toString(),
-        style = MaterialTheme.typography.labelSmall.copy(
-            fontSize = fontSize,
-            fontWeight = if (currentLetter == letter) FontWeight.Bold else FontWeight.Normal,
-        ),
-        color = displayColor,
-        modifier = Modifier
-            .offset(x = visual.leftShiftDp.dp)
-            .graphicsLayer(
-                scaleX = animatedScale,
-                scaleY = animatedScale,
+    override fun getItemId(position: Int): Long = getItem(position).stableKey
+
+    override fun getItemViewType(position: Int): Int = getItem(position).contentType
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        val textView = AppCompatTextView(parent.context).apply {
+            layoutParams = RecyclerView.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
             )
-            .clickable(
-                enabled = visual.enabled,
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onClick,
-            ),
-    )
+        }
+        return if (viewType == 0) {
+            HeaderViewHolder(textView)
+        } else {
+            ItemViewHolder(textView)
+        }
+    }
+
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        when (val row = getItem(position)) {
+            is ContactRow.Header -> (holder as HeaderViewHolder).bind(row.letter)
+            is ContactRow.Item -> (holder as ItemViewHolder).bind(row.name)
+        }
+    }
+
+    private class HeaderViewHolder(
+        private val textView: AppCompatTextView,
+    ) : RecyclerView.ViewHolder(textView) {
+        fun bind(letter: Char) {
+            textView.text = letter.toString()
+            textView.setTypeface(null, Typeface.BOLD)
+            textView.setTextSize(18f)
+            textView.setPadding(16.dpToPx(textView), 8.dpToPx(textView), 16.dpToPx(textView), 8.dpToPx(textView))
+            textView.setTextColor(
+                MaterialColors.getColor(
+                    textView,
+                    com.google.android.material.R.attr.colorOnSurface,
+                ),
+            )
+        }
+    }
+
+    private class ItemViewHolder(
+        private val textView: AppCompatTextView,
+    ) : RecyclerView.ViewHolder(textView) {
+        fun bind(name: String) {
+            textView.text = name
+            textView.setTypeface(null, Typeface.NORMAL)
+            textView.setTextSize(16f)
+            textView.setPadding(24.dpToPx(textView), 10.dpToPx(textView), 24.dpToPx(textView), 10.dpToPx(textView))
+            textView.setTextColor(
+                MaterialColors.getColor(
+                    textView,
+                    com.google.android.material.R.attr.colorOnSurface,
+                ),
+            )
+        }
+    }
+
+    private companion object {
+        val DiffCallback = object : DiffUtil.ItemCallback<ContactRow>() {
+            override fun areItemsTheSame(oldItem: ContactRow, newItem: ContactRow): Boolean {
+                return oldItem.stableKey == newItem.stableKey
+            }
+
+            override fun areContentsTheSame(oldItem: ContactRow, newItem: ContactRow): Boolean {
+                return oldItem == newItem
+            }
+        }
+    }
 }
 
 private fun buildContactListUiData(names: List<String>): ContactListUiData {
     val grouped = names.groupBy { it.first().uppercaseChar() }.toSortedMap()
+    var nextKey = 0L
     val rows = buildList {
         grouped.forEach { (letter, entries) ->
-            add(ContactRow.Header(letter))
-            entries.forEach { add(ContactRow.Item(it)) }
+            add(ContactRow.Header(letter = letter, stableKey = nextKey++))
+            entries.forEach { add(ContactRow.Item(name = it, stableKey = nextKey++)) }
         }
     }
     val firstIndexByLetter = buildMap {
@@ -610,7 +585,12 @@ private fun nearestAvailableLetter(
     return null
 }
 
+private fun Int.dpToPx(view: AppCompatTextView): Int {
+    return (this * view.resources.displayMetrics.density).toInt()
+}
+
 private const val SIDEBAR_BUFFER_PERCENT = 10
+private const val SIDEBAR_BUBBLE_SIZE_DP = 52
+private const val SIDEBAR_BUBBLE_OFFSET_X_DP = (-16)
 private const val SIDEBAR_HIGHLIGHT_CLEAR_DELAY_MS = 120L
 private const val SIDEBAR_HAPTIC_MIN_INTERVAL_MS = 35L
-private const val SIDEBAR_SCROLL_DEBOUNCE_MS = 16L

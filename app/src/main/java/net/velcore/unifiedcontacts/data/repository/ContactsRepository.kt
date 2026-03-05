@@ -42,7 +42,7 @@ class ContactsRepository(private val context: Context) {
             if (accountRef != null) {query.accounts(Account(accountRef.name, accountRef.type)).find()}
             else {query.find()} //this is useful for when the user wants to view their contact from all Accounts simultaneously
 
-        val names = contacts.mapNotNull { it.displayNamePrimary }
+        val names = contacts.mapNotNull { it.displayNamePrimary?.takeIf(String::isNotBlank) }
         ContactCache.putContactNames(accountRef, names)
         Log.d(TAG, "getAllContactNames: cached result (size=${names.size})")
         return names
